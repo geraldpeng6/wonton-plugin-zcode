@@ -20,7 +20,7 @@ key。登录态存在数据目录，容器重建后还在；网关接入或卸�
 ## 构建镜像
 
 ```bash
-docker build -t ghcr.io/geraldpeng6/wonton-plugin-zcode:0.1.0 -f images/wonton-plugin-zcode/Dockerfile images/wonton-plugin-zcode
+docker build -t ghcr.io/geraldpeng6/wonton-plugin-zcode:0.1.1 -f images/wonton-plugin-zcode/Dockerfile images/wonton-plugin-zcode
 ```
 
 构建时从官方 CDN 下载 ZCode 桌面包并核对 sha256，只留下 CLI。桥镜像由主仓库维护，`scripts/publish.sh` 只构建本仓库 `images/` 下的 Agent 镜像。
