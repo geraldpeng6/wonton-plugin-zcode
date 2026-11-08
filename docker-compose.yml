@@ -2,7 +2,7 @@
 # 两个服务只共享 ACP socket 所在的 run/ 子目录，bridge 的 crypto store 和 Matrix 令牌不给 agent。
 services:
   agent:
-    image: ghcr.io/geraldpeng6/wonton-plugin-zcode:0.1.0
+    image: ghcr.io/geraldpeng6/wonton-plugin-zcode:0.1.1
     user: "65532:65532"
     restart: unless-stopped
     environment:
@@ -49,7 +49,7 @@ services:
       WONTON_AGENT_WORKSPACE: /workspace
       WONTON_MATRIX_HOMESERVER: ${WONTON_MATRIX_HOMESERVER:?需要 Matrix 地址}
       WONTON_MATRIX_ACCESS_TOKEN: ${WONTON_MATRIX_ACCESS_TOKEN:?需要 Bot 的 Matrix 访问令牌}
-      WONTON_MATRIX_OWNER: ${WONTON_MATRIX_OWNER:?需要主人的 Matrix 用户 ID}
+      WONTON_MATRIX_ALLOWED_USERS: ${WONTON_MATRIX_ALLOWED_USERS:?需要主人的 Matrix 用户 ID}
       WONTON_MATRIX_HOME_ROOM: ${WONTON_MATRIX_HOME_ROOM:?需要主人与 Bot 的主房间}
       WONTON_MCP_URL: ${WONTON_MCP_URL:?需要 MCP 总线地址}
       # 新会话切到这个模式：改文件、跑命令经确认卡片问主人。
@@ -65,9 +65,9 @@ services:
       start_interval: 2s
 
 x-wonton:
-  spec: "0.6"
+  spec: "0.9"
   id: ai.zcode
-  version: 0.1.0
+  version: 0.1.1
   kind: agent
   title: { zh: ZCode, en: ZCode }
   description:
@@ -103,8 +103,8 @@ x-wonton:
       It works in its own container and asks through confirmation cards before editing files or running
       commands; Wonton plugin tools are called from the chat too.
   release_notes:
-    zh: 首个版本。支持模型网关、智谱账号登录和 Coding Plan key。
-    en: First release. Supports the model gateway, Zhipu account sign-in and Coding Plan keys.
+    zh: 首个版本。支持模型网关、智谱账号登录和 Coding Plan key。名单用核心的名单变量（插件规范 0.9）。
+    en: First release. Supports the model gateway, Zhipu account sign-in and Coding Plan keys. The allow list uses the core's user list (spec 0.9).
   agent:
     protocol: acp
     # id 和 agent.toml 的 [[login]] 一一对应；登录都在 ZCode 自己的程序里完成。
