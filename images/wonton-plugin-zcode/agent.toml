@@ -1,0 +1,50 @@
+# ZCode 的配置：ACP 桥首次启动从 npm 装（版本和 npm 摘要固定），CLI 在镜像里。
+
+[[install]]
+name = "zcode-acp-server"
+version = "0.82.1"
+source = "npm"
+package = "zcode-acp-server"
+integrity = "sha512-QHVaKQk8yEYCTWfmaW1+VpwBe5iq7zcPd32SlEy7sZeuPS/xMPZQvKxb8XrPFrekOig6f0kE2594d5uOZae3IQ=="
+
+[skills]
+target = "~/.zcode/skills"
+
+[prompt]
+target = "~/.zcode/AGENTS.md"
+
+# apply/clear 只动配置里的网关那一条；MCP 总线地址也由它每次启动同步。
+[gateway]
+hook = "/usr/local/lib/wonton-agent/gateway"
+
+[acp]
+command = ["/usr/local/bin/zcode-acp"]
+
+[web]
+port = 8080
+
+# 官方登录只有浏览器授权：CLI 打印链接后自己轮询，不用回贴码。成功后容器重启，钩子按新登录态选路。
+[[login]]
+id = "account-zai"
+name = "Z.ai 账号（浏览器授权）"
+command = ["/usr/local/bin/zcode-cli", "login", "--no-browser"]
+status = ["/usr/local/lib/wonton-agent/login-status", "account", "zai"]
+
+[[login]]
+id = "account-bigmodel"
+name = "智谱账号（浏览器授权，bigmodel.cn）"
+command = ["/usr/local/bin/zcode-cli", "login", "bigmodel", "--no-browser"]
+status = ["/usr/local/lib/wonton-agent/login-status", "account", "bigmodel"]
+
+# Coding Plan key：读一行，写进 ~/.zcode/v2/provider_config.json（0600）。
+[[login]]
+id = "coding-plan-zai"
+name = "Z.ai Coding Plan key"
+command = ["/usr/local/lib/wonton-agent/coding-plan-login", "zai"]
+status = ["/usr/local/lib/wonton-agent/login-status", "coding-plan", "zai"]
+
+[[login]]
+id = "coding-plan-bigmodel"
+name = "智谱 Coding Plan key"
+command = ["/usr/local/lib/wonton-agent/coding-plan-login", "bigmodel"]
+status = ["/usr/local/lib/wonton-agent/login-status", "coding-plan", "bigmodel"]

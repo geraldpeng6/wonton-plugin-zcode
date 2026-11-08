@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+"""每次启动的模型配置同步，入口按核心注入的变量调 apply 或 clear。
+
+apply/clear 只动网关那一条 provider（`wonton-gateway`），用户自己登录的账号和填的 key 不动；
+`apply` 先把用户原来的默认模型记下来，`clear` 只在默认模型还是网关时把它还回去。MCP 总线地址每次启动都同步。
+三个网关变量任一为空就是没接网关，入口调 clear。
+
+provider_config.json 是 CLI 的个人模型配置（明文 key，0600），config.json 是桥读的凭据配置。
+配置文件写坏了直接报错退出，不猜、不重置。
+"""
+import json
+import os
+import sys
+from pathlib import Path
+
+HOME = Path(os.path.expanduser("~"))
+V2 = HOME / ".zcode" / "v2"
+PROVIDERS = V2 / "provider_config.json"
+CREDENTIALS = V2 / "config.json"
+CLI_CONFIG = HOME / ".zcode" / "cli" / "config.json"
+SAVED_DEFAULT = HOME / ".zcode" / "wonton-gateway-default.json"
+
+GATEWAY = "wonton-gateway"
+MODEL_RULES = {"providerModelRules": [], "manualProviderModelRules": []}
+
+
+def die(message: str) -> None:
+    print(f"网关钩子：{message}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+def load(path: Path) -> dict:
+    try:
+        data = json.loads(path.read_text())
+    except FileNotFoundError:
+        return {}
+    except ValueError as error:
+        die(f"{path} 不是合法 JSON（{error}），先修好它")
+    if not isinstance(data, dict):
+        die(f"{path} 顶层不是对象")
+    return data
+
+
+def save(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+    temporary.chmod(0o600)
+    os.replace(temporary, path)
+
+
+def provider_config() -> dict:
+    """个人配置的骨架；modelConfigRules 的两个空数组缺了 CLI 会报“先选模型”。"""
+    data = load(PROVIDERS)
+    data.setdefault("schemaVersion", 1)
+    config = data.setdefault("config", {})
+    rules = config.setdefault("providerConfigRules", {})
+    rules.setdefault("providerRules", [])
+    config.setdefault("modelConfigRules", dict(MODEL_RULES))
+    return data
+
+
+def rules_of(data: dict) -> list:
+    return data["config"]["providerConfigRules"]["providerRules"]
+
+
+def selection_of(data: dict) -> dict | None:
+    selection = data["config"].get("defaultModelSelection")
+    return selection if isinstance(selection, dict) else None
+
+
+def put_first(items: dict, name: str, value: dict) -> dict:
+    """同名项放最前面：桥的凭据扫描取第一个启用项，网关要压过用户的。"""
+    return {name: value, **{key: item for key, item in items.items() if key != name}}
+
+
+def apply() -> None:
+    base_url = os.environ["WONTON_MODEL_BASE_URL"]
+    api_key = os.environ["WONTON_MODEL_API_KEY"]
+    model = os.environ["WONTON_MODEL_DEFAULT"]
+
+    data = provider_config()
+    rules = rules_of(data)
+    rules[:] = [rule for rule in rules if rule.get("providerId") != GATEWAY]
+    rules.insert(0, {
+        "providerId": GATEWAY,
+        "providerName": "Wonton 模型网关",
+        "config": {
+            "group": "standard-personal",
+            "access": {"type": "api-key", "apiKey": api_key},
+            "api": {"type": "openai-chat-completions", "baseUrl": base_url},
+            "personalModelIds": [model],
+        },
+    })
+    config = data["config"]
+    current = selection_of(data)
+    if current is None or current.get("providerId") != GATEWAY:
+        save(SAVED_DEFAULT, {"selection": current})
+    config["defaultModelSelection"] = {"providerId": GATEWAY, "modelId": model}
+    save(PROVIDERS, data)
+
+    credentials = load(CREDENTIALS)
+    provider = credentials.get("provider")
+    credentials["provider"] = put_first(provider if isinstance(provider, dict) else {}, GATEWAY, {
+        "enabled": True,
+        "name": "Wonton 模型网关",
+        "kind": "openai",
+        "options": {"baseURL": base_url, "apiKey": api_key},
+        "models": {model: {}},
+    })
+    save(CREDENTIALS, credentials)
+
+
+def user_default(data: dict) -> dict | None:
+    """用户原来的默认模型：钩子记下的；没有记录时用他自己的 Coding Plan 来源。"""
+    if SAVED_DEFAULT.exists():
+        saved = load(SAVED_DEFAULT).get("selection")
+        if isinstance(saved, dict):
+            return saved
+    for rule in rules_of(data):
+        models = rule.get("config", {}).get("personalModelIds") or []
+        if models:
+            return {"providerId": rule["providerId"], "modelId": models[0]}
+    return None
+
+
+def clear() -> None:
+    # 配置文件可以不存在，但桥读不到 config.json 时连会话都建不了，所以 clear 顺带保证它存在。
+    if not CREDENTIALS.exists():
+        save(CREDENTIALS, {"provider": {}})
+
+    if PROVIDERS.exists():
+        data = provider_config()
+        if any(rule.get("providerId") == GATEWAY for rule in rules_of(data)):
+            data["config"]["providerConfigRules"]["providerRules"] = [
+                rule for rule in rules_of(data) if rule.get("providerId") != GATEWAY
+            ]
+            config = data["config"]
+            if (selection_of(data) or {}).get("providerId") == GATEWAY:
+                fallback = user_default(data)
+                if fallback:
+                    config["defaultModelSelection"] = fallback
+                else:
+                    config.pop("defaultModelSelection", None)
+            save(PROVIDERS, data)
+
+        if not rules_of(data) and "defaultModelSelection" not in data["config"]:
+            PROVIDERS.unlink()
+    SAVED_DEFAULT.unlink(missing_ok=True)
+
+    credentials = load(CREDENTIALS)
+    provider = credentials.get("provider")
+    if isinstance(provider, dict) and GATEWAY in provider:
+        del provider[GATEWAY]
+        save(CREDENTIALS, credentials)
+
+
+def sync_mcp() -> None:
+    """Wonton 的 MCP 总线写进 CLI 的运行配置；地址（含 Bot 令牌）每次启动重写。"""
+    url = os.environ.get("WONTON_MCP_URL", "").strip()
+    data = load(CLI_CONFIG)
+    servers = data.get("mcp", {}).get("servers") if isinstance(data.get("mcp"), dict) else None
+    servers = servers if isinstance(servers, dict) else {}
+    if url:
+        servers["wonton"] = {"type": "http", "url": url, "alwaysLoad": True}
+        data["mcp"] = {**data.get("mcp", {}), "servers": servers}
+        save(CLI_CONFIG, data)
+    elif "wonton" in servers:
+        del servers["wonton"]
+        save(CLI_CONFIG, data)
+
+
+def sync_network() -> None:
+    """CLI 不读 HTTPS_PROXY/NO_PROXY，只认自己的 network.httpProxy/noProxy；每次启动照容器的代理环境重写。
+
+    桥自己用 NODE_USE_ENV_PROXY 走标准变量，拉起的 CLI 子进程则由它按这份配置出网。
+    """
+    proxy = os.environ.get("HTTPS_PROXY", "").strip() or os.environ.get("HTTP_PROXY", "").strip()
+    no_proxy = os.environ.get("NO_PROXY", "").strip()
+    if not proxy and not no_proxy:
+        return
+    data = load(CLI_CONFIG)
+    network = data.get("network") if isinstance(data.get("network"), dict) else {}
+    if proxy:
+        network["httpProxy"] = proxy
+    if no_proxy:
+        network["noProxy"] = no_proxy
+    data["network"] = network
+    save(CLI_CONFIG, data)
+
+
+def main() -> None:
+    action = sys.argv[1] if len(sys.argv) > 1 else ""
+    if action == "apply":
+        apply()
+    elif action == "clear":
+        clear()
+    else:
+        die(f"用法：{sys.argv[0]} apply|clear")
+    sync_mcp()
+    sync_network()
+
+
+main()
