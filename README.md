@@ -1,6 +1,6 @@
 # ZCode
 
-开发流程见[插件开发指南](https://github.com/geraldpeng6/wonton-docs/blob/main/develop.md)。
+开发流程见[插件开发指南](https://github.com/wontonapp/wonton-docs/blob/main/develop.md)。
 
 ZCode 是智谱的编程 Agent（`zai-org/ZCode` 官方 CLI，经社区的 `zcode-acp-server` 说 ACP）：以核心分配的 Matrix 身份和主人聊天，
 经 Wonton MCP 总线调用工具。模型网关接好时默认走网关，不用账号、也不用填 key；没接网关时 Agent 照常启动，在插件页（App 的
