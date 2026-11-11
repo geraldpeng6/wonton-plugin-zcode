@@ -69,10 +69,10 @@ x-wonton:
   id: ai.zcode
   version: 0.1.1
   kind: agent
-  title: { zh: ZCode, en: ZCode }
+  title: { zh: AI 编程助手（ZCode）, en: Coding Bot (ZCode) }
   description:
-    zh: 智谱的 ZCode 编程 Agent，在聊天里动手，改文件前先问你
-    en: Zhipu's ZCode coding agent that works in chat and asks before it edits
+    zh: 智谱家的编程助手：在聊天里帮你写代码、改文件、跑命令，动手前先弹卡片问你。直接用模型设置就行，也能用智谱或 Z.ai 账号登录。
+    en: "Zhipu's (Z.ai) coding bot: it writes code, edits files and runs commands from your chat, asking with a card before it acts. Works with your Models setup, or sign in with a Zhipu or Z.ai account."
   icon: icon.png
   notices: [NOTICE, images/wonton-plugin-zcode/LICENSE.zcode]
   author: { name: Wonton plugin authors }
@@ -81,19 +81,22 @@ x-wonton:
   tags: { zh: [AI, 开发], en: [AI, Development] }
   about:
     zh: |
-      ZCode 是智谱的编程 Agent，以 Bot 的身份住进聊天。模型网关接好时默认走网关，不用账号，也不用填 key。
-      没接网关时在插件页的登录网页（默认 Bot）或聊天里发 /wonton login，用智谱账号登录（浏览器授权），或者贴一个 Coding Plan 的 key；账号登录和登录后的模型请求都直接发给智谱。
+      ZCode 是智谱的编程 AI，住进你的聊天里：改文件、跑命令之前先弹确认卡片问你；你装的应用提供的工具
+      也能在聊天里用。默认用模型设置里配好的 AI，不用账号、不用填 key；也可以用自己的身份——在应用页
+      打开登录网页（管默认 Bot）或在聊天里发 /wonton login（管这个聊天的 Bot），用智谱或 Z.ai 账号
+      授权登录，或贴上 Coding Plan 的 key。
 
       注意两件事：Coding Plan 的额度和加速条款只对官方工具和官方端点有效，经这里用的是官方 ZCode CLI 本体，
       但社区 ACP 桥拉起的会话算不算官方工具，官方没写明；账号登录的令牌过期后不会自动刷新，要重新登录一次。
 
       它住在自己的容器里，改文件、跑命令之前经确认卡片问你；Wonton 插件的工具也从聊天里调。
     en: |
-      ZCode is Zhipu's coding agent, living in the chat as a bot. When the model gateway is connected it
-      goes through the gateway by default, with no account and no key to fill in. Without the gateway, sign
-      in from the plugin page's sign-in screen (the default bot) or with /wonton login in the chat: a Zhipu
-      account (browser authorization) or a Coding Plan key; the sign-in and the model requests after it go
-      straight to Zhipu.
+      ZCode is Zhipu's coding AI, living in your chat: it sends an approval request before editing
+      files or running commands, and the tools your apps provide work from the chat too. By default
+      it uses the AI set up in Models — no account, no key. You can also use your own identity:
+      open the sign-in page on the app screen (for the default bot) or send /wonton login in the
+      chat (for this chat's bot), then sign in with a Zhipu or Z.ai account, or paste a Coding
+      Plan key.
 
       Two things to know: the Coding Plan quota and speed terms only cover official tools and endpoints.
       This plugin runs the official ZCode CLI itself, but whether sessions started through the community
