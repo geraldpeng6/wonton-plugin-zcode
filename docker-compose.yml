@@ -116,6 +116,8 @@ x-wonton:
         title: { zh: Z.ai 账号, en: Z.ai account }
       - id: account-bigmodel
         title: { zh: 智谱账号（bigmodel.cn）, en: Zhipu account (bigmodel.cn) }
+      - id: model-gateway
+        title: { zh: 模型网关, en: Model gateway }
   bot:
     display_name: { zh: ZCode, en: ZCode }
   bots:
