@@ -9,7 +9,7 @@ services:
       HOME: /data/agent/home
       WONTON_ACP_SOCKET: /data/run/acp.sock
       WONTON_AGENT_WORKSPACE: /workspace
-      # 模型网关钩子：有网关就把网关写进配置，为空就删掉，用户自己的登录和 key 不动。
+      # 核心注入模型网关；未接网关时允许在登录页明确选择官方账号。
       WONTON_MODEL_BASE_URL: ${WONTON_MODEL_BASE_URL:-}
       WONTON_MODEL_API_KEY: ${WONTON_MODEL_API_KEY:-}
       WONTON_MODEL_DEFAULT: ${WONTON_MODEL_DEFAULT:-}
@@ -67,7 +67,7 @@ services:
 x-wonton:
   spec: "0.9"
   id: ai.zcode
-  version: 0.1.1
+  version: 0.1.2
   kind: agent
   title: { zh: AI 编程助手（ZCode）, en: Coding Bot (ZCode) }
   description:
@@ -82,9 +82,8 @@ x-wonton:
   about:
     zh: |
       ZCode 是智谱的编程 AI，住进你的聊天里：改文件、跑命令之前先弹确认卡片问你；你装的应用提供的工具
-      也能在聊天里用。默认用模型设置里配好的 AI，不用账号、不用填 key；也可以用自己的身份——在应用页
-      打开登录网页（管默认 Bot）或在聊天里发 /wonton login（管这个聊天的 Bot），用智谱或 Z.ai 账号
-      授权登录，或贴上 Coding Plan 的 key。
+      也能在聊天里用。默认用模型设置里配好的 AI；也可以在应用页打开登录网页（管默认 Bot）或在聊天里
+      发 /wonton login（管这个聊天的 Bot），明确选择智谱或 Z.ai 账号登录。切回模型设置也在登录页选择。
 
       注意两件事：Coding Plan 的额度和加速条款只对官方工具和官方端点有效，经这里用的是官方 ZCode CLI 本体，
       但社区 ACP 桥拉起的会话算不算官方工具，官方没写明；账号登录的令牌过期后不会自动刷新，要重新登录一次。
@@ -93,10 +92,9 @@ x-wonton:
     en: |
       ZCode is Zhipu's coding AI, living in your chat: it sends an approval request before editing
       files or running commands, and the tools your apps provide work from the chat too. By default
-      it uses the AI set up in Models — no account, no key. You can also use your own identity:
-      open the sign-in page on the app screen (for the default bot) or send /wonton login in the
-      chat (for this chat's bot), then sign in with a Zhipu or Z.ai account, or paste a Coding
-      Plan key.
+      it uses the AI set up in Models. To use your own identity, open the sign-in page on the app
+      screen (for the default bot) or send /wonton login in the chat (for this chat's bot), and
+      explicitly choose a Zhipu or Z.ai account. Use the same page to switch back to Models.
 
       Two things to know: the Coding Plan quota and speed terms only cover official tools and endpoints.
       This plugin runs the official ZCode CLI itself, but whether sessions started through the community
@@ -106,8 +104,10 @@ x-wonton:
       It works in its own container and asks through confirmation cards before editing files or running
       commands; Wonton plugin tools are called from the chat too.
   release_notes:
-    zh: 首个版本。支持模型网关、智谱账号登录和 Coding Plan key。名单用核心的名单变量（插件规范 0.9）。
-    en: First release. Supports the model gateway, Zhipu account sign-in and Coding Plan keys. The allow list uses the core's user list (spec 0.9).
+    zh: 模型没接好时不再偷偷换用其他账号；你仍可以自己选择用账号登录。
+    en: If Models is unavailable, the bot no longer switches accounts behind your back. You can still choose account sign-in.
+    zh-Hant: 模型未連上時不再偷偷切換其他帳號；你仍可自行選擇帳號登入。
+    ja: モデルに接続できないとき、別のアカウントに自動で切り替えなくなりました。アカウントでのログインは選べます。
   agent:
     protocol: acp
     # id 和 agent.toml 的 [[login]] 一一对应；登录都在 ZCode 自己的程序里完成。
@@ -116,10 +116,6 @@ x-wonton:
         title: { zh: Z.ai 账号, en: Z.ai account }
       - id: account-bigmodel
         title: { zh: 智谱账号（bigmodel.cn）, en: Zhipu account (bigmodel.cn) }
-      - id: coding-plan-zai
-        title: { zh: Z.ai Coding Plan key, en: Z.ai Coding Plan key }
-      - id: coding-plan-bigmodel
-        title: { zh: 智谱 Coding Plan key, en: Zhipu Coding Plan key }
   bot:
     display_name: { zh: ZCode, en: ZCode }
   bots:

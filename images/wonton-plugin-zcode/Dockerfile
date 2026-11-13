@@ -30,7 +30,7 @@ RUN case "$TARGETARCH" in \
 # 用户和 ENTRYPOINT 继承底座；这里只放配置、钩子和包装脚本。
 COPY agent.toml /etc/wonton-agent/
 COPY --chmod=0755 gateway /usr/local/lib/wonton-agent/gateway
-COPY --chmod=0755 coding-plan-login login-status /usr/local/lib/wonton-agent/
+COPY --chmod=0755 model-source login-status /usr/local/lib/wonton-agent/
 COPY --chmod=0755 zcode-acp zcode-cli /usr/local/bin/
 COPY LICENSE.zcode /usr/share/doc/wonton-plugin-zcode/
 COPY prompt.md /usr/local/share/wonton-agent/prompt.md

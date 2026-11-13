@@ -17,7 +17,7 @@ extra_check() {
   agent_check_restart agent bridge
   agent_check_resume 青杏
   agent_check_outsider
-  agent_check_login_web account-zai account-bigmodel coding-plan-zai coding-plan-bigmodel
+  agent_check_login_web account-zai account-bigmodel model-gateway
   agent_check_login account-zai 'https?://'
 }
 
