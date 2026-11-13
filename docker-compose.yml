@@ -2,7 +2,7 @@
 # 两个服务只共享 ACP socket 所在的 run/ 子目录，bridge 的 crypto store 和 Matrix 令牌不给 agent。
 services:
   agent:
-    image: ghcr.io/geraldpeng6/wonton-plugin-zcode:0.1.1@sha256:c0532a1f91c9de5e3d9629cec3a7f0926ca1c83eb9008eb1a3c674d15ffaa9b0
+    image: ghcr.io/geraldpeng6/wonton-plugin-zcode:0.1.2@sha256:c36301848d805870ae139dddfc818e064fdb804772cfa052ce15e8b9a2cabbdd
     user: "65532:65532"
     restart: unless-stopped
     environment:
