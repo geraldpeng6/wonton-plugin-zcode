@@ -65,7 +65,7 @@ services:
       start_interval: 2s
 
 x-wonton:
-  spec: "0.9"
+  spec: "0.11"
   id: ai.zcode
   version: 0.1.3
   kind: agent
@@ -130,10 +130,11 @@ x-wonton:
     # 凭据文件的加密密钥，装一次生成一次，存在核心的密钥库里。
     zcode_credential_secret:
       generate: { bytes: 32 }
+  # 模型走可选能力模型网关；没接上网关时在登录页用官方账号。
+  wants: [models]
   permissions:
     - matrix.bot
     - tools
-    - models
     # 账号登录和登录后的官方模型请求都要出网。
     - network.egress
   requirements:
