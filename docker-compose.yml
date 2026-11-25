@@ -1,5 +1,6 @@
 # ZCode Agent：agent 跑固定版本的官方 ZCode CLI（镜像里）和 ACP 桥 zcode-acp-server（首次启动装到数据卷）；
-# 两个服务只共享 ACP socket 所在的 run/ 子目录，bridge 的 crypto store 和 Matrix 令牌不给 agent。
+# 两个服务只共享 ACP socket 所在的 run/ 子目录；bridge 的 crypto store、听的人名单和主房间不给 agent，
+# Matrix 地址和 Bot 令牌给 agent 只为健康探测。
 services:
   agent:
     image: ghcr.io/geraldpeng6/wonton-plugin-zcode:0.1.3@sha256:a54733cd77980f13ad8ecb84e0412507c630aac412bb3aa7fa66a7e9faf721bf
@@ -15,6 +16,9 @@ services:
       WONTON_MODEL_DEFAULT: ${WONTON_MODEL_DEFAULT:-}
       # 插件工具经 MCP 总线；地址带 Bot 令牌，钩子每次启动写进 CLI 运行配置。
       WONTON_MCP_URL: ${WONTON_MCP_URL:?需要 MCP 总线地址}
+      # Bot 的 Matrix 身份：健康检查拿它问一次 whoami，同步停了才不会一直显示健康。
+      WONTON_MATRIX_HOMESERVER: ${WONTON_MATRIX_HOMESERVER:?需要 Matrix 地址}
+      WONTON_MATRIX_ACCESS_TOKEN: ${WONTON_MATRIX_ACCESS_TOKEN:?需要 Bot 的 Matrix 访问令牌}
       # 凭据文件的加密密钥：核心按安装生成一次，重建容器不变，否则已有的登录解不开。
       ZCODE_CREDENTIAL_SECRET: ${WONTON_SECRET_ZCODE_CREDENTIAL_SECRET}
       # 会话起始权限模式：改文件和跑命令前弹确认卡片。
@@ -27,8 +31,10 @@ services:
       - ${WONTON_BOT_DATA}/run:/data/run
       - ${WONTON_BOT_DATA}/workspace:/workspace
     healthcheck:
-      # socket 是底座把 ACP 转发建好之后才有的，有它才说明 Agent 能接连接。
-      test: ["CMD", "test", "-S", "/data/run/acp.sock"]
+      # socket 只说明底座建好了 ACP 转发；同步是 bridge 在启动时连一次 Matrix，断了它不退出、socket 也还在，
+      # 所以再拿 Bot 令牌问一次身份：令牌失效、Matrix 连不上都算不健康。curl 在底座镜像里，
+      # `$$` 留给容器里的 shell 展开；配了代理时核心会把 CMD-SHELL 里的代理变量去掉。
+      test: ["CMD-SHELL", "test -S /data/run/acp.sock && curl -fsS -X GET -H \"Authorization: Bearer $$WONTON_MATRIX_ACCESS_TOKEN\" \"$$WONTON_MATRIX_HOMESERVER/_matrix/client/v3/account/whoami\" >/dev/null"]
       interval: 30s
       timeout: 5s
       start_period: 120s
@@ -58,6 +64,8 @@ services:
       - ${WONTON_BOT_DATA}/bridge:/data/bridge
       - ${WONTON_BOT_DATA}/run:/data/run
     healthcheck:
+      # 只探 socket：bridge 用上游官方镜像按摘要固定，里面只有 ca-certificates、没有 curl 和 wget，
+      # 不为它加镜像层。同步是否还在跑由 agent 那边的 whoami 揭示。
       test: ["CMD", "test", "-S", "/data/run/acp.sock"]
       interval: 30s
       timeout: 5s
@@ -104,10 +112,10 @@ x-wonton:
       It works in its own container and asks through confirmation cards before editing files or running
       commands; Wonton plugin tools are called from the chat too.
   release_notes:
-    zh: 补充适合人群和模型设置、账号登录的区别。
-    en: Clarify who it is for and the difference between Models setup and account sign-in.
-    zh-Hant: 補充適合人群，以及模型設定與帳號登入的區別。
-    ja: 対象ユーザーと、モデル設定とアカウントログインの違いを明確にしました。
+    zh: 按规范 0.15 重写清单：Agent 改用 Matrix 协议，去掉核心不支持的登录声明；模型网关改成可选能力，没接网关时在登录页选择智谱或 Z.ai 账号；agent 的健康检查能发现同步断掉。
+    en: "Rewrite the manifest for spec 0.15: the Agent speaks the Matrix protocol, the unsupported login declaration is gone, the models gateway is an optional capability (without a gateway you sign in with a Zhipu or Z.ai account on the sign-in page), and the Agent health check now catches a dropped sync."
+    zh-Hant: 依規範 0.15 重寫清單：Agent 改用 Matrix 協議，移除核心不支援的登入宣告；模型閘道改為選用能力，沒接閘道時在登入頁選擇智譜或 Z.ai 帳號；agent 的健康檢查能發現同步中斷。
+    ja: 仕様 0.15 に合わせてマニフェストを書き直しました。エージェントは Matrix プロトコルを使い、コアが対応していないログイン宣言を削除。モデルゲートウェイは任意の機能になり、未接続ならサインインページで智譜／Z.ai アカウントを選べます。エージェントのヘルスチェックで同期の停止も分かります。
   agent:
     protocol: matrix
   bot:
