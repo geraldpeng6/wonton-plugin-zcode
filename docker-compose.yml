@@ -109,7 +109,7 @@ x-wonton:
     zh-Hant: 補充適合人群，以及模型設定與帳號登入的區別。
     ja: 対象ユーザーと、モデル設定とアカウントログインの違いを明確にしました。
   agent:
-    protocol: acp
+    protocol: matrix
   bot:
     display_name: { zh: ZCode, en: ZCode }
   bots:
