@@ -3,7 +3,7 @@
 # Matrix 地址和 Bot 令牌给 agent 只为健康探测。
 services:
   agent:
-    image: ghcr.io/geraldpeng6/wonton-plugin-zcode:0.1.3@sha256:a54733cd77980f13ad8ecb84e0412507c630aac412bb3aa7fa66a7e9faf721bf
+    image: ghcr.io/geraldpeng6/wonton-plugin-zcode:0.1.4@sha256:57473ded55c0ecf6b39614ff8e4ec2d9cde14537f740c821e608a9eb7ac59587
     user: "65532:65532"
     restart: unless-stopped
     environment:
